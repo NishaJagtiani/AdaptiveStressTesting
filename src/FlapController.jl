@@ -34,7 +34,7 @@ type FlapControl
     fc.step = step_fn
     fc.isterminal = isterminal_fn
     fc.actuator1 = FlapActuator(fc, params.actuator1_strength)
-    fc.actuator2 = FlapActuator(fc, params.actuator2_strengtha)
+    fc.actuator2 = FlapActuator(fc, params.actuator2_strength)
     return fc
   end
 
@@ -54,21 +54,22 @@ end
 
 #perfrom actuation step and safety check
 function actuate(actuator::FlapActuator)
+  
   actuator_effect = actuator.strength
-  while actuator.controller.params.goal_position - actuator.controller.flap_position > actuator.strength || actuator.controller.params.goal_position < -1*actuator.strength
-
-    if actuator.controller.params.goal_position > actuator.controller.flap_position
-      actuator_effect = actuator.strength
-    else
-      actuator_effect = -1 * actuator.strength
-    end
-
+  if actuator.controller.params.goal_position > actuator.controller.flap_position
+    actuator_effect = actuator.strength
+  else
+    actuator_effect = -1 * actuator.strength
+  end
+  
+  if actuator.controller.params.goal_position - actuator.controller.flap_position > actuator.strength || actuator.controller.params.goal_position < -1*actuator.strength
     actuator.controller.flap_position = actuator.controller.flap_position + actuator_effect + actuator.controller.params.wind_effect;
   end
 end
 
 #initialize
 function initialize(sim::FlapControl)
+  sim.flap_position = sim.params.starting_flap_position
 end
 
 
