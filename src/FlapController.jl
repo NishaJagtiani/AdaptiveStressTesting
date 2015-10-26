@@ -4,97 +4,85 @@
 
 module FlapController
 
-# used for storing wind effect profiles
-type WindEffectProfile
-  min::Int64
-  max::Int64
-  probability::Float64
-  profile_type::AbstractString
-end
+export FlapControl, FlapControlParams, initialize, isterminal, step
 
-# controller
-type FlapControl
-  obj::FlapControl
-  flap_position::Int64
+type FlapControlParams
+  starting_flap_position::Int64
   min_position::Int64
   max_position::Int64
   goal_position::Int64
   wind_effect::Int64
+  actuator1_strength::Int64
+  actuator2_strength::Int64
+end
 
-  # parameterized constructor
-  FlapControl(goal_position, wind_effect) =
-    (x = new();
-     x.flap_position = 0; #starting flap_position
-     x.min_position = 0;
-     x.max_position = 15;
-     x.goal_position = goal_position;
-     x.wind_effect = wind_effect;
-     x.obj = x)
+# controller
+type FlapControl
+  params::FlapControlParams
+  sim
+  flap_position
+  initialize::Function #initialize(sim)
+  step::Function #step(sim)
+  isterminal::Function #isterminal(sim)
+
+  function FlapControl(params::FlapControlParams, sim, initialize_fn::Function, step_fn::Function, isterminal_fn::Function)
+    fc = new()
+    fc.params = params
+    fc.sim = sim
+    fc.flap_position = params.starting_flap_position
+    fc.initialize = initialize_fn
+    fc.step = step_fn
+    fc.isterminal = isterminal_fn
+    fc.actuator1 = FlapActuator(fc, params.actuator1_strength)
+    fc.actuator2 = FlapActuator(fc, params.actuator2_strengtha)
+    return fc
+  end
+
 end
 
 # actuator type
 type FlapActuator
-  strength::Int64
   controller::FlapControl
-end
-
-
-# returns an array with sample profile data
-function createprofiles()
-  profiles = Array(WindEffectProfile,0)
-  push!(profiles, WindEffectProfile(-15, -10, 0.02, "weak"))
-  push!(profiles, WindEffectProfile(-15, -10, 0.18, "strong"))
-  push!(profiles, WindEffectProfile(-10, -5, 0.10, "weak"))
-  push!(profiles, WindEffectProfile(-10, -5, 0.20, "strong"))
-  push!(profiles, WindEffectProfile(-5, 5, 0.75, "weak"))
-  push!(profiles, WindEffectProfile(-5, 5, 0.30, "strong"))
-  push!(profiles, WindEffectProfile(5, 10, 0.10, "weak"))
-  push!(profiles, WindEffectProfile(5, 10, 0.20, "strong"))
-  push!(profiles, WindEffectProfile(10, 15, 0.02, "weak"))
-  push!(profiles, WindEffectProfile(10, 15, 0.18, "strong"))
-  return profiles
-end
-
-# returns a random profile
-function getrandomprofile(profiles::Array{WindEffectProfile})
-  r = rand(1:length(profiles))
-  return profiles[r]
-end
-
-#returns a random value for wind effect within min and max range
-function getrandomwindeffect(profile::WindEffectProfile)
-  return rand(profile.min:profile.max)
+  strength::Int64
+  function FlapActuator(fc::FlapControl, str::Int64)
+    fa = new()
+    fa.controller = fc
+    fa.strength = str
+    return fa
+  end
 end
 
 #perfrom actuation step and safety check
 function actuate(actuator::FlapActuator)
   actuator_effect = actuator.strength
-  while actuator.controller.goal_position - actuator.controller.flap_position > actuator.strength || actuator.controller.goal_position < -1*actuator.strength
-    if actuator.controller.goal_position > actuator.controller.flap_position
+  while actuator.controller.params.goal_position - actuator.controller.flap_position > actuator.strength || actuator.controller.params.goal_position < -1*actuator.strength
+
+    if actuator.controller.params.goal_position > actuator.controller.flap_position
       actuator_effect = actuator.strength
     else
       actuator_effect = -1 * actuator.strength
     end
 
-    actuator.controller.flap_position = actuator.controller.flap_position + actuator_effect + actuator.controller.wind_effect;
-    println("flap_position : ", actuator.controller.flap_position);
-    if(actuator.controller.flap_position > actuator.controller.max_position || actuator.controller.flap_position <= actuator.controller.min_position)
-      println("stop : ", actuator.controller.flap_position);
-      break;
-    end
+    actuator.controller.flap_position = actuator.controller.flap_position + actuator_effect + actuator.controller.params.wind_effect;
   end
 end
 
 #initialize
-function initialize()
+function initialize(sim::FlapControl)
 end
 
+
 #isterminal
-function isterminal()
+function isterminal(sim::FlapControl)
+  sim.flap_position > sim.params.max_position || sim.flap_position <= sim.params.min_position
 end
 
 #step
-function step()
+function step(sim::FlapControl)
+  #does each step move one actuator or both?
+  #assuming it moves both
+  actuate(sim.actuator1);
+  actuate(sim.actuator2);
 end
 
 
