@@ -4,6 +4,19 @@
 
 module FlapControllerTest
 
+
+sim_params = FlapControlParams()
+sim_params.starting_flap_position
+sim_params.min_position = 0
+sim_params.max_position = 15
+sim_params.goal_position = 17
+sim_params.wind_effect = 0.02
+sim_params.actuator1_strength = 10
+sim_params.actuator2_strength = 1
+
+sim = FlapControl(sim_params)
+
+
 # used for storing wind effect profiles
 type WindEffectProfile
   min::Int64
