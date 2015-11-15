@@ -5,6 +5,10 @@
 include("FlapController.jl")
 
 using FlapController
+using AdaptiveStressTesting
+
+const MAXTIME = 20 #sim endtime
+const RNG_LENGTH = 2
 
 const STARTING_POSITION = 1
 const MIN_POSITION = 0
@@ -31,3 +35,5 @@ strong_profile = WindEffectProfile("strong", strong_profile_data)
 
 sim_params = FlapControlParams(STARTING_POSITION, MIN_POSITION, MAX_POSITION, GOAL_POSITION, ACTUATOR1_STRENGTH, ACTUATOR2_STRENGTH, weak_profile, false);
 sim = FlapControl(sim_params)
+ast_params = ASTParams(MAXTIME, RNG_LENGTH, 0, nothing)
+ast = AdaptiveStressTest(ast_params, sim, initialize, step, isterminal)

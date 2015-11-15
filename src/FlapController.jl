@@ -4,7 +4,7 @@
 
 module FlapController
 
-export FlapControl, FlapControlParams, ProfileData, WindEffectProfile, initialize, isterminal, step
+export FlapControl, FlapControlParams, ProfileData, WindEffectProfile, initialize, step, isterminal
 
 type ProfileData
   min::Int64
@@ -84,8 +84,8 @@ end
 
 #step
 function step(sim::FlapControl)
-  actuate(sim , sim.params.actuator1_strength);
-  actuate(sim , sim.params.actuator2_strength);
+  actuate(sim , sim.params.actuator1_strength)
+  actuate(sim , sim.params.actuator2_strength)
 end
 
 end #module
