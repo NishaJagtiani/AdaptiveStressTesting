@@ -4,7 +4,7 @@
 
 module FlapController
 
-export FlapControl, FlapControlParams, ProfileData, WindEffectProfile, initialize, step, isterminal
+export FlapControl, FlapControlParams, ProfileData, WindEffectProfile, initialize, step, isterminal, randProfile
 
 type ProfileData
   min::Int64
@@ -32,7 +32,9 @@ end
 # controller
 type FlapControl
   params::FlapControlParams
-  flap_position
+  flap_position::Int64
+  t::Int64 #num steps
+  #log::Vector{Float64}
   #initialize::Function #initialize(sim)
   #step::Function #step(sim)
   #isterminal::Function #isterminal(sim)
@@ -49,8 +51,9 @@ type FlapControl
 
 end
 
-function rand(profile::WindEffectProfile)
-  return rand(profile.data.min:profile.data.max) , profile.data.probability
+function randProfile(profile::WindEffectProfile)
+  randprof = profile.data[rand(1:end)]
+  return rand(randprof.min:randprof.max) , randprof.probability
 end
 
 
@@ -58,7 +61,7 @@ end
 function actuate(sim::FlapControl, strength::Int64)
   
   actuator_effect = strength
-  rand_wind_effect , rand_prob = rand(sim.params.profile)
+  rand_wind_effect , rand_prob = randProfile(sim.params.profile)
 
   if sim.params.goal_position > sim.flap_position
     actuator_effect = strength
@@ -73,19 +76,27 @@ end
 
 #initialize
 function initialize(sim::FlapControl)
-  sim.flap_position = sim.params.starting_flap_position
+  #sim.flap_position = sim.params.starting_flap_position
+  sim.t = 0
+  #empty!(sim.log)
+  #if sim.params.logging
+  #  push!(sim.log, sim.flap_position)
+  #end
 end
 
 
 #isterminal
 function isterminal(sim::FlapControl)
-  sim.flap_position > sim.params.max_position || sim.flap_position <= sim.params.min_position
+  sim.t >= sim.params.endtime
+  #sim.flap_position > sim.params.max_position || sim.flap_position <= sim.params.min_position
 end
 
 #step
 function step(sim::FlapControl)
-  actuate(sim , sim.params.actuator1_strength)
-  actuate(sim , sim.params.actuator2_strength)
+  #sim.flap_position = sim.flap_position + 1
+  sim.t += 1
+  #actuate(sim , sim.params.actuator1_strength)
+  #actuate(sim , sim.params.actuator2_strength)
 end
 
 end #module

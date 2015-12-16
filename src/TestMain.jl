@@ -35,5 +35,8 @@ strong_profile = WindEffectProfile("strong", strong_profile_data)
 
 sim_params = FlapControlParams(STARTING_POSITION, MIN_POSITION, MAX_POSITION, GOAL_POSITION, ACTUATOR1_STRENGTH, ACTUATOR2_STRENGTH, weak_profile, false);
 sim = FlapControl(sim_params)
+FlapController.initialize(sim)
 ast_params = ASTParams(MAXTIME, RNG_LENGTH, 0, nothing)
-ast = AdaptiveStressTest(ast_params, sim, initialize, step, isterminal)
+ast = AdaptiveStressTest(ast_params, sim, FlapController.initialize, FlapController.step, FlapController.isterminal)
+
+sample(ast);
