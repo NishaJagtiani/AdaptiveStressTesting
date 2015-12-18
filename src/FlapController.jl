@@ -34,15 +34,16 @@ type FlapControl
   params::FlapControlParams
   flap_position::Int64
   t::Int64 #num steps
-  #log::Vector{Float64}
-  #initialize::Function #initialize(sim)
-  #step::Function #step(sim)
-  #isterminal::Function #isterminal(sim)
+  log::Vector{Float64}
+  initialize::Function #initialize(sim)
+  step::Function #step(sim)
+  isterminal::Function #isterminal(sim)
 
   function FlapControl(params::FlapControlParams)
     fc = new()
     fc.params = params
     fc.flap_position = params.starting_flap_position
+    fc.log = Float64[]
     #fc.initialize = initialize_fn
     #fc.step = step_fn
     #fc.isterminal = isterminal_fn
@@ -59,7 +60,6 @@ end
 
 #perform actuation step and safety check
 function actuate(sim::FlapControl, strength::Int64)
-  
   actuator_effect = strength
   rand_wind_effect , rand_prob = randProfile(sim.params.profile)
 
@@ -69,34 +69,49 @@ function actuate(sim::FlapControl, strength::Int64)
     actuator_effect = -1 * strength
   end
   
-  if sim.params.goal_position - sim.flap_position > strength || sim.params.goal_position < -1*strength
+  if sim.params.goal_position - sim.flap_position >= strength || sim.params.goal_position - sim.flap_position <= -1*strength
     sim.flap_position = sim.flap_position + actuator_effect + rand_wind_effect;
   end
+  return rand_prob
 end
 
 #initialize
 function initialize(sim::FlapControl)
-  #sim.flap_position = sim.params.starting_flap_position
+  sim.flap_position = sim.params.starting_flap_position
   sim.t = 0
-  #empty!(sim.log)
-  #if sim.params.logging
-  #  push!(sim.log, sim.flap_position)
-  #end
+  
+  if sim.params.logging
+  push!(sim.log, sim.flap_position)
+  end
 end
-
 
 #isterminal
 function isterminal(sim::FlapControl)
-  sim.t >= sim.params.endtime
-  #sim.flap_position > sim.params.max_position || sim.flap_position <= sim.params.min_position
+  sim.t >= 20
+  sim.flap_position > sim.params.max_position || sim.flap_position <= sim.params.min_position
 end
+
+function isevent(sim::FlapControl)
+  return  sim.flap_position > sim.params.max_position || sim.flap_position <= sim.params.min_position
+end
+
+function getDist(sim::FlapControl)
+  max_pos = (sim.params.max_position - sim.flap_position)^2
+  min_pos = (sim.flap_position - sim.params.min_position)^2
+  return Float64(min(max_pos , min_pos))
+  end
 
 #step
 function step(sim::FlapControl)
-  #sim.flap_position = sim.flap_position + 1
+  sim.flap_position = sim.flap_position + 1
   sim.t += 1
-  #actuate(sim , sim.params.actuator1_strength)
-  #actuate(sim , sim.params.actuator2_strength)
+  p1 = actuate(sim , sim.params.actuator1_strength)
+  p2 = actuate(sim , sim.params.actuator2_strength)
+  rand_prob = p1*p2
+  if sim.params.logging
+  push!(sim.log, sim.flap_position)
+  end
+   return  rand_prob, isevent(sim), getDist(sim)
 end
 
 end #module
